@@ -1,6 +1,8 @@
 
-def read_bits(start, end):
+def read_bits(data, start, end):
     bits = []
+    plus_data = []
+    minus_data = []
     pd = None
     for i, d in enumerate(data[start:end]):
         if d < 0:
