@@ -16,15 +16,11 @@ elif samplewidth == 4:
     data = np.frombuffer(buf, dtype='int32')
 
 bits = familybasic_wave.familybasic_wave.read_bits(data)
-info_block, \
-lines, \
-checksum_info_expect, \
-checksum_info_actual, \
-checksum_data_expect, \
-checksum_data_actual = familybasic_wave.familybasic_wave.read_info_data(bits)
+info_block, lines, sum_info_exp, sum_info_act, sum_data_exp, sum_data_act = \
+    familybasic_wave.familybasic_wave.read_info_data(bits)
 print(info_block)
-print('checksum_info={} {}'.format(checksum_info_expect, checksum_info_actual))
-print('checksum_data={} {}'.format(checksum_data_expect, checksum_data_actual))
+print('checksum_info={} {}'.format(sum_info_exp, sum_info_act))
+print('checksum_data={} {}'.format(sum_data_exp, sum_data_act))
 for line in lines:
     print(line)
 '''
@@ -77,11 +73,11 @@ def read_info_data(bits):
     checksum = 0
     bits2 = []
     info_block = None
-    lines= []
-    checksum_info_expect = None
-    checksum_info_actual = None
-    checksum_data_expect = None
-    checksum_data_actual = None
+    lines = []
+    sum_info_exp = None
+    sum_info_act = None
+    sum_data_exp = None
+    sum_data_act = None
     for i, b in enumerate(bits):
         if pb is not None:
             if b == pb:
@@ -115,9 +111,9 @@ def read_info_data(bits):
                 filename = ''
                 for c in info_bytes[1:17]:
                     filename += '%c' % c
-                info_block = {'attribute' : info_bytes[0],
-                                     'filename' : filename,
-                                     'length' : info_bytes[18] + info_bytes[19] * 0x100}
+                info_block = {'attribute': info_bytes[0],
+                              'filename': filename,
+                              'length': info_bytes[18] + info_bytes[19] * 0x100}
                 bits2.clear()
                 area = 4
 
@@ -126,12 +122,12 @@ def read_info_data(bits):
             checksum += b
             bits2.append(b)
             if len(bits2) == 9 * 2:
-                ckecksum_bytes = bits_to_bytes(bits2)
-                checksum_info_expect = ckecksum_bytes[0] + ckecksum_bytes[1] * 0x100
+                sum_bytes = bits_to_bytes(bits2)
+                sum_info_exp = sum_bytes[0] + sum_bytes[1] * 0x100
                 bits2.clear()
                 area = 10
-                checksum_info_actual = checksum
-                chechsum = 0
+                sum_info_act = checksum
+                checksum = 0
 
         elif area == 10:
             # データブロック-テープマーク１後
@@ -181,7 +177,7 @@ def read_info_data(bits):
                 lines.append(line)
                 if total_len + 1 >= info_block['length']:
                     area = 15
-                    checksum_data_actual = checksum
+                    sum_data_act = checksum
                 else:
                     area = 13
                 bits2.clear()
@@ -190,16 +186,11 @@ def read_info_data(bits):
             # データブロック-チェックサム
             bits2.append(b)
             if len(bits2) == 9 * 2:
-                ckecksum_bytes = bits_to_bytes(bits2)
-                checksum_data_expect = ckecksum_bytes[0] + ckecksum_bytes[1] * 0x100
+                sum_bytes = bits_to_bytes(bits2)
+                sum_data_exp = sum_bytes[0] + sum_bytes[1] * 0x100
                 bits2.clear()
                 area = 16
 
         pb = b
-    
-    return info_block, \
-           lines, \
-           checksum_info_expect, \
-           checksum_info_actual, \
-           checksum_data_expect, \
-           checksum_data_actual
+
+    return info_block, lines, sum_info_exp, sum_info_act, sum_data_exp, sum_data_act
