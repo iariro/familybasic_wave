@@ -1,10 +1,10 @@
 
-def read_bits(data, start, end):
+def read_bits(data):
     bits = []
     plus_data = []
     minus_data = []
     pd = None
-    for i, d in enumerate(data[start:end]):
+    for i, d in enumerate(data):
         if d < 0:
             # minus
             if pd is not None and pd >= 0:
@@ -48,6 +48,10 @@ def read_info_data(bits):
     bits2 = []
     info_block = None
     lines= []
+    checksum_info_expect = None
+    checksum_info_actual = None
+    checksum_data_expect = None
+    checksum_data_actual = None
     for i, b in enumerate(bits):
         if pb is not None:
             if b == pb:
@@ -57,67 +61,68 @@ def read_info_data(bits):
 
         if area == 0:
             # インフォーメーションブロック前
-            if b > 0:
-                checksum += 1
+            checksum += b
             if b == 1 and count == 40:
                 area = 1
 
         elif area == 1:
             # インフォーメーションブロック-テープマーク１後
-            if b > 0:
-                checksum += 1
+            checksum += b
             if b == 0 and count == 40:
                 area = 2
 
         elif area == 2:
             # インフォーメーションブロック-テープマーク２後
+            checksum += b
             area = 3
 
         elif area == 3:
             # インフォーメーションブロック-正味
             checksum += b
-
             bits2.append(b)
             if len(bits2) == 9 * 128:
                 info_bytes = bits_to_bytes(bits2)
+                filename = ''
+                for c in info_bytes[1:17]:
+                    filename += '%c' % c
                 info_block = {'attribute' : info_bytes[0],
-                                     'filename' : ['%c' % c for c in info_bytes[1:17]],
+                                     'filename' : filename,
                                      'length' : info_bytes[18] + info_bytes[19] * 0x100}
                 bits2.clear()
                 area = 4
 
         elif area == 4:
             # インフォーメーションブロック-チェックサム
+            checksum += b
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 ckecksum_bytes = bits_to_bytes(bits2)
-                print('checksum=%x %x %x' % (ckecksum_bytes[0], ckecksum_bytes[1], checksum))
+                checksum_info_expect = ckecksum_bytes[0] + ckecksum_bytes[1] * 0x100
                 bits2.clear()
                 area = 10
+                checksum_info_actual = checksum
                 chechsum = 0
 
         elif area == 10:
             # データブロック-テープマーク１後
-            if b > 0:
-                checksum += 1
+            checksum += b
             if pb == 1 and count == 20:
                 area = 11
 
         elif area == 11:
             # データブロック-テープマーク２後
-            if b > 0:
-                checksum += 1
+            checksum += b
             if pb == 0 and count == 20:
                 area = 12
 
         elif area == 12:
             # データブロック-テープマーク２後
-                area = 13
+            checksum += b
+            area = 13
 
         elif area == 13:
             # データブロック-バイト数
-            if b > 0:
-                checksum += 1
+            checksum += b
             bits2.append(b)
             if len(bits2) == 9 * 1:
                 length_bytes = bits_to_bytes(bits2)
@@ -146,6 +151,7 @@ def read_info_data(bits):
                 lines.append(line)
                 if total_len + 1 >= info_block['length']:
                     area = 15
+                    checksum_data_actual = checksum
                 else:
                     area = 13
                 bits2.clear()
@@ -155,10 +161,15 @@ def read_info_data(bits):
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 ckecksum_bytes = bits_to_bytes(bits2)
-                print('checksum=%x %x' % (ckecksum_bytes[0], ckecksum_bytes[1]))
+                checksum_data_expect = ckecksum_bytes[0] + ckecksum_bytes[1] * 0x100
                 bits2.clear()
                 area = 16
 
         pb = b
     
-    return info_block, lines
+    return info_block, \
+           lines, \
+           checksum_info_expect, \
+           checksum_info_actual, \
+           checksum_data_expect, \
+           checksum_data_actual
