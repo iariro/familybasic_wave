@@ -1,3 +1,33 @@
+'''
+import wave
+import numpy as np
+import familybasic_wave.familybasic_wave
+
+file = 'xxx.wav'
+
+waveFile = wave.open(file, 'r')
+buf = waveFile.readframes(-1)
+waveFile.close()
+
+samplewidth = waveFile.getsampwidth()
+if samplewidth == 2:
+    data = np.frombuffer(buf, dtype='int16')
+elif samplewidth == 4:
+    data = np.frombuffer(buf, dtype='int32')
+
+bits = familybasic_wave.familybasic_wave.read_bits(data)
+info_block, \
+lines, \
+checksum_info_expect, \
+checksum_info_actual, \
+checksum_data_expect, \
+checksum_data_actual = familybasic_wave.familybasic_wave.read_info_data(bits)
+print(info_block)
+print('checksum_info={} {}'.format(checksum_info_expect, checksum_info_actual))
+print('checksum_data={} {}'.format(checksum_data_expect, checksum_data_actual))
+for line in lines:
+    print(line)
+'''
 
 def read_bits(data):
     bits = []
