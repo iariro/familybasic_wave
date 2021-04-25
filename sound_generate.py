@@ -39,7 +39,6 @@ def save_wave(binwave, file_name):
     # フレーム数
     # 圧縮形式(今のところNONEのみ)
     # 圧縮形式を人に判読可能な形にしたもの？通常'NONE'に対して'not compressed'
-    binwave = struct.pack("h" * len(wave_value), *wave_value)
     p = (1, 2, fs, len(binwave), 'NONE', 'not compressed')
     w.setparams(p)
     w.writeframes(binwave)
