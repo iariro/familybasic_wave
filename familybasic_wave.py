@@ -30,11 +30,19 @@ def read_bits(data):
     plus_data = []
     minus_data = []
     pd = None
+    wave_count = 0
+    dot_count = 0
     for i, d in enumerate(data):
         if d < 0:
             # minus
             if pd is not None and pd >= 0:
                 # plus -> minus
+                wave_count += 1
+                if 21000 <= wave_count < 28000:
+                    dot_count += len(plus_data) + len(minus_data)
+                    if wave_count % 1000 == 0:
+                        print(dot_count)
+                        dot_count = 0
                 if len(plus_data) > 0 and len(minus_data) > 0:
                     if len(plus_data) <= 15:
                         b1 = 0
