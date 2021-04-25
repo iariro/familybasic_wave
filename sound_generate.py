@@ -55,5 +55,6 @@ for i in range(1000):
     else:
         wave_value += w2
 binwave = struct.pack("h" * len(wave_value), *wave_value)
-simpleaudio.play_buffer(binwave, 1, 2, fs)
+playback = simpleaudio.play_buffer(binwave, 1, 2, fs)
+playback.wait_done()
 save_wave(binwave, 'basic.wav')
