@@ -95,24 +95,23 @@ def read_info_data(bits):
 
         if area == 0:
             # インフォーメーションブロック前
-            checksum += b
             if b == 1 and count == 40:
                 area = 1
 
         elif area == 1:
             # インフォーメーションブロック-テープマーク１後
-            checksum += b
             if b == 0 and count == 40:
                 area = 2
 
         elif area == 2:
             # インフォーメーションブロック-テープマーク２後
-            checksum += b
             area = 3
 
         elif area == 3:
             # インフォーメーションブロック-正味
-            checksum += b
+            if len(bits2) % 9 > 0:
+                checksum += b
+
             bits2.append(b)
             if len(bits2) == 9 * 128:
                 info_bytes = bits_to_bytes(bits2)
@@ -127,11 +126,10 @@ def read_info_data(bits):
 
         elif area == 4:
             # インフォーメーションブロック-チェックサム
-            checksum += b
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 sum_bytes = bits_to_bytes(bits2)
-                sum_info_exp = sum_bytes[0] + sum_bytes[1] * 0x100
+                sum_info_exp = sum_bytes[0] * 0x100 + sum_bytes[1]
                 bits2.clear()
                 area = 10
                 sum_info_act = checksum
@@ -139,24 +137,23 @@ def read_info_data(bits):
 
         elif area == 10:
             # データブロック-テープマーク１後
-            checksum += b
             if pb == 1 and count == 20:
                 area = 11
 
         elif area == 11:
             # データブロック-テープマーク２後
-            checksum += b
             if pb == 0 and count == 20:
                 area = 12
 
         elif area == 12:
             # データブロック-テープマーク２後
-            checksum += b
             area = 13
 
         elif area == 13:
             # データブロック-バイト数
-            checksum += b
+            if len(bits2) % 9 > 0:
+                checksum += b
+
             bits2.append(b)
             if len(bits2) == 9 * 1:
                 length_bytes = bits_to_bytes(bits2)
@@ -166,8 +163,8 @@ def read_info_data(bits):
 
         elif area == 14:
             # データブロック-行番号・テキスト
-            if b > 0:
-                checksum += 1
+            if len(bits2) % 9 > 0:
+                checksum += b
 
             bits2.append(b)
             if len(bits2) == 9 * (line_len - 1):
@@ -191,13 +188,21 @@ def read_info_data(bits):
                 bits2.clear()
 
         elif area == 15:
+            # データブロック-？
+            bits2.append(b)
+            if len(bits2) == 9:
+                sum_bytes = bits_to_bytes(bits2)
+                bits2.clear()
+                area = 16
+
+        elif area == 16:
             # データブロック-チェックサム
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 sum_bytes = bits_to_bytes(bits2)
-                sum_data_exp = sum_bytes[0] + sum_bytes[1] * 0x100
+                sum_data_exp = sum_bytes[0] * 0x100 + sum_bytes[1]
                 bits2.clear()
-                area = 16
+                area = 17
 
         pb = b
 
