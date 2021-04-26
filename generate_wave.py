@@ -8,9 +8,8 @@
 import numpy as np
 import wave
 import struct
-import simpleaudio
-import matplotlib.pyplot as plt
-import random
+
+fs = 44100
 
 def create_wave(hz, rate, time, volume, square):
     # f0:基本周波数,fs:サンプリング周波数,再生時間[s]
@@ -24,14 +23,11 @@ def create_wave(hz, rate, time, volume, square):
                 wave_value[i] = volume
             elif wave_value[i] < 0:
                 wave_value[i] = -volume
-    #plt.plot(wave_value)
-    #plt.show()
 
-    #16bit符号付き整数に変換
+    # 16bit符号付き整数に変換
     return [int(x * 32767) for x in wave_value]
 
 def save_wave(binwave, file_name):
-    #サイン波をwavファイルとして書き出し
     w = wave.Wave_write(file_name)
     # チャンネル数(1:モノラル,2:ステレオ)
     # サンプルサイズ(バイト)
@@ -44,16 +40,13 @@ def save_wave(binwave, file_name):
     w.writeframes(binwave)
     w.close()
 
-fs = 44100
-wave_value = []
-w1 = create_wave(2005, fs, 1/2005, 0.1, True)
-w2 = create_wave(2005/2, fs, 2/2005, 0.1, True)
-for i in range(1000):
-    if random.randint(0,10) < 5:
-        wave_value += w1
-    else:
-        wave_value += w2
-binwave = struct.pack("h" * len(wave_value), *wave_value)
-playback = simpleaudio.play_buffer(binwave, 1, 2, fs)
-playback.wait_done()
-save_wave(binwave, 'basic.wav')
+def bits_to_wave(bits):
+    wave_value = []
+    w1 = create_wave(2005, fs, 1/2005, 0.1, True)
+    w2 = create_wave(2005/2, fs, 2/2005, 0.1, True)
+    for b in bits:
+        if b:
+            wave_value += w1
+        else:
+            wave_value += w2
+    return struct.pack("h" * len(wave_value), *wave_value)

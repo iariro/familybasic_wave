@@ -3,7 +3,7 @@ import wave
 import numpy as np
 import familybasic_wave.read_wave
 
-file = r'familybasic_wave\data\Firecracker_06.wav'
+file = 'familybasic_wave\\data\\Firecracker_06.wav'
 
 waveFile = wave.open(file, 'r')
 buf = waveFile.readframes(-1)
@@ -16,11 +16,11 @@ elif samplewidth == 4:
     data = np.frombuffer(buf, dtype='int32')
 
 bits = familybasic_wave.read_wave.read_bits(data)
-info_block, lines, sum_info_exp, sum_info_act, sum_data_exp, sum_data_act = \
+info_block, lines, sum_info_e, sum_info_a, sum_data_e, sum_data_a = \
     familybasic_wave.read_wave.read_info_data(bits)
 print(info_block)
-print('checksum_info={} {}'.format(sum_info_exp, sum_info_act))
-print('checksum_data={} {}'.format(sum_data_exp, sum_data_act))
+print('checksum_info={} {}'.format(sum_info_e, sum_info_a))
+print('checksum_data={} {}'.format(sum_data_e, sum_data_a))
 for line in lines:
     print(line)
 '''
@@ -82,10 +82,10 @@ def read_info_data(bits):
     bits2 = []
     info_block = None
     lines = []
-    sum_info_exp = None
-    sum_info_act = None
-    sum_data_exp = None
-    sum_data_act = None
+    sum_info_e = None
+    sum_info_a = None
+    sum_data_e = None
+    sum_data_a = None
     for i, b in enumerate(bits):
         if pb is not None:
             if b == pb:
@@ -120,7 +120,7 @@ def read_info_data(bits):
                     filename += '%c' % c
                 info_block = {'attribute': info_bytes[0],
                               'filename': filename,
-                              'length': info_bytes[18] + info_bytes[19] * 0x100}
+                              'length': info_bytes[18] + info_bytes[19] << 8}
                 bits2.clear()
                 area = 4
 
@@ -129,10 +129,10 @@ def read_info_data(bits):
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 sum_bytes = bits_to_bytes(bits2)
-                sum_info_exp = sum_bytes[0] * 0x100 + sum_bytes[1]
+                sum_info_e = sum_bytes[0] * 0x100 + sum_bytes[1]
                 bits2.clear()
                 area = 10
-                sum_info_act = checksum
+                sum_info_a = checksum
                 checksum = 0
 
         elif area == 10:
@@ -182,7 +182,7 @@ def read_info_data(bits):
                 lines.append(line)
                 if total_len + 1 >= info_block['length']:
                     area = 15
-                    sum_data_act = checksum
+                    sum_data_a = checksum
                 else:
                     area = 13
                 bits2.clear()
@@ -200,10 +200,10 @@ def read_info_data(bits):
             bits2.append(b)
             if len(bits2) == 9 * 2:
                 sum_bytes = bits_to_bytes(bits2)
-                sum_data_exp = sum_bytes[0] * 0x100 + sum_bytes[1]
+                sum_data_e = sum_bytes[0] * 0x100 + sum_bytes[1]
                 bits2.clear()
                 area = 17
 
         pb = b
 
-    return info_block, lines, sum_info_exp, sum_info_act, sum_data_exp, sum_data_act
+    return info_block, lines, sum_info_e, sum_info_a, sum_data_e, sum_data_a
