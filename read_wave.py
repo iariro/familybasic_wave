@@ -1,9 +1,9 @@
 '''
 import wave
 import numpy as np
-import familybasic_wave.familybasic_wave
+import familybasic_wave.read_wave
 
-file = 'xxx.wav'
+file = r'familybasic_wave\data\Firecracker_06.wav'
 
 waveFile = wave.open(file, 'r')
 buf = waveFile.readframes(-1)
@@ -15,9 +15,9 @@ if samplewidth == 2:
 elif samplewidth == 4:
     data = np.frombuffer(buf, dtype='int32')
 
-bits = familybasic_wave.familybasic_wave.read_bits(data)
+bits = familybasic_wave.read_wave.read_bits(data)
 info_block, lines, sum_info_exp, sum_info_act, sum_data_exp, sum_data_act = \
-    familybasic_wave.familybasic_wave.read_info_data(bits)
+    familybasic_wave.read_wave.read_info_data(bits)
 print(info_block)
 print('checksum_info={} {}'.format(sum_info_exp, sum_info_act))
 print('checksum_data={} {}'.format(sum_data_exp, sum_data_act))
