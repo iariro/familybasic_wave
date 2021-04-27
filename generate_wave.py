@@ -25,21 +25,9 @@ import math
 
 fs = 44100
 
-class FBBitArray():
+class FBByteArray():
     def __init__(self):
         self.bits = []
-
-    def add_bit(self, v):
-        self.bits.append(v)
-
-    def add_bits(self, v, num):
-        self.bits += [v] * num
-
-    def add_bytes(self, bytes_):
-        for byte in bytes_:
-            self.bits.append(True)
-            for i in range(8):
-                self.bits.append(True if byte & (1 << (7 - i)) > 0 else False)
 
     def add_word_little_endian(self, word):
         self.add_bytes([word % 0x100, word // 0x100])
@@ -47,19 +35,10 @@ class FBBitArray():
     def add_word_big_endian(self, word):
         self.add_bytes([word // 0x100, word % 0x100])
 
-    def make_info_header(self):
-        self.add_bits(False, 20000)
-        # テープマーク
-        self.add_bits(True, 40)
-        self.add_bits(False, 40)
-        self.add_bit(True)
-
-    def make_data_header(self):
-        self.add_bits(False, 20000)
-        # テープマーク
-        self.add_bits(True, 20)
-        self.add_bits(False, 20)
-        self.add_bit(True)
+    def add_bytes(self, bytes_):
+        for byte in bytes_:
+            for i in range(8):
+                self.bits.append(True if byte & (1 << (7 - i)) > 0 else False)
 
     def make_info_block(self, file_name, data_len):
         # インフォメーション
@@ -76,17 +55,40 @@ class FBBitArray():
     def calc_checksum(self):
         checksum = 0
         for i, b in enumerate(self.bits):
-            if i % 9 > 0 and b:
+            if b:
                 checksum += 1
         return checksum
 
     def make_data_block(self, lines):
+        count = 0
         for line in lines:
             line_len = len(line[1]) + 1
             self.add_bytes([line_len + 3])
             self.add_word_little_endian(line[0])
             self.add_bytes([ord(c) for c in line[1]] + [0x00])
+            count += 3 + line_len
         self.add_bytes([0x00])
+        return count
+
+class FBBitArray():
+    def __init__(self):
+        self.bits = []
+
+    def add_bit(self, v):
+        self.bits.append(v)
+
+    def add_bits(self, v, num):
+        self.bits += [v] * num
+
+    def add_bytes_bits(self, bits):
+        for i in range(0, len(bits), 8):
+            self.bits += [True] + bits[i:i + 8]
+
+    def make_header(self, num):
+        self.add_bits(False, 20000)
+        # テープマーク
+        self.add_bits(True, num)
+        self.add_bits(False, num)
 
     def bits_to_wave(self):
         cycle_length = 21.683
@@ -122,28 +124,31 @@ def save_wave(binwave, file_name):
     w.close()
 
 def make_binwave(file_name, lines):
-    data_len = 0
-    for line in lines:
-        data_len += 1 + 2 + len(line[1]) + 1
 
-    info_header_bits = FBBitArray()
-    info_header_bits.make_info_header()
-    binwave = info_header_bits.bits_to_wave()
+    data_bytes = FBByteArray()
+    data_len = data_bytes.make_data_block(lines)
+    data_sum = data_bytes.calc_checksum()
+    data_bytes.add_word_big_endian(data_sum)
+
+    info_bytes = FBByteArray()
+    info_bytes.make_info_block(file_name, data_len)
+    info_sum = info_bytes.calc_checksum()
+    info_bytes.add_word_big_endian(info_sum)
 
     info_bits = FBBitArray()
-    info_bits.make_info_block(file_name, data_len)
-    info_sum = info_bits.calc_checksum()
-    info_bits.add_word_big_endian(info_sum)
-    info_bits.add_bit(True)
-    binwave += info_bits.bits_to_wave()
+    info_bits.make_header(40)
 
-    data_header_bits = FBBitArray()
-    data_header_bits.make_data_header()
-    binwave += data_header_bits.bits_to_wave()
+    info_bits.add_bit(True)
+    info_bits.add_bytes_bits(info_bytes.bits)
+    info_bits.add_bit(True)
+    binwave = info_bits.bits_to_wave()
+
     data_bits = FBBitArray()
-    data_bits.make_data_block(lines)
-    data_sum = data_bits.calc_checksum()
-    data_bits.add_word_big_endian(data_sum)
+    data_bits.make_header(20)
+
+    data_bits.add_bit(True)
+    data_bits.add_bytes_bits(data_bytes.bits)
     data_bits.add_bit(True)
     binwave += data_bits.bits_to_wave()
+
     return binwave
