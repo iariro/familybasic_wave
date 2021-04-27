@@ -142,8 +142,8 @@ def make_binwave(file_name, lines):
     binwave += data_header_bits.bits_to_wave()
     data_bits = FBBitArray()
     data_bits.make_data_block(lines)
-    info_sum = info_bits.calc_checksum()
-    data_bits.add_word_big_endian(info_sum)
+    data_sum = data_bits.calc_checksum()
+    data_bits.add_word_big_endian(data_sum)
     data_bits.add_bit(True)
     binwave += data_bits.bits_to_wave()
     return binwave
