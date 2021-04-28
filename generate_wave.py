@@ -48,9 +48,9 @@ class FBByteArray():
         self.add_bytes(file_name_b) # file name
         self.add_bytes([0x00]) # 0
         self.add_word_little_endian(data_len) # length
-        self.add_bytes([0x00, 0x00])
-        self.add_bytes([0x00, 0x00])
-        self.add_bytes([0x00] * 104)
+        self.add_word_little_endian(0x703e) # load address
+        self.add_word_little_endian(0x2020) # execute address
+        self.add_bytes([0x00] * 104) # padding
 
     def calc_checksum(self):
         checksum = 0

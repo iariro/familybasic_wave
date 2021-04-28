@@ -120,7 +120,9 @@ def read_info_data(bits):
                     filename += '%c' % c
                 info_block = {'attribute': info_bytes[0],
                               'filename': filename,
-                              'length': info_bytes[18] + (info_bytes[19] << 8)}
+                              'length': info_bytes[18] + (info_bytes[19] << 8),
+                              'load_addr': info_bytes[20] + (info_bytes[21] << 8),
+                              'exec_addr': info_bytes[22] + (info_bytes[23] << 8)}
                 bits2.clear()
                 area = 4
 
