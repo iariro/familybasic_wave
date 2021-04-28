@@ -95,18 +95,18 @@ class FBBitArray():
         volume = 1600
 
         wave_value = []
-        cycle_count = 0
-        cycle_count2 = 0
+        cycle_count_f = 0
+        cycle_count_i = 0
         for i, b in enumerate(self.bits):
+            cycle_f = cycle_length
             if b:
-                cycle_count += cycle_length * 2
-                for i in range(math.floor(cycle_count) - cycle_count2):
-                    wave_value.append(-volume if i < cycle_length else volume)
-            else:
-                cycle_count += cycle_length
-                for j in range(math.floor(cycle_count) - cycle_count2):
-                    wave_value.append(-volume if j < cycle_length / 2 else volume)
-            cycle_count2 += (math.floor(cycle_count) - cycle_count2)
+                cycle_f *= 2
+
+            cycle_count_f += cycle_f
+            cycle_i = math.floor(cycle_count_f) - cycle_count_i
+            for j in range(cycle_i):
+                wave_value.append(-volume if j < cycle_f / 2 else volume)
+                cycle_count_i += 1
 
         return struct.pack("h" * len(wave_value), *wave_value)
 
