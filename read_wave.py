@@ -38,10 +38,10 @@ def read_bits(data):
             if pd is not None and pd >= 0:
                 # plus -> minus
                 wave_count += 1
-                if 21000 <= wave_count < 28000:
+                if wave_count < 28000:
                     dot_count += len(plus_data) + len(minus_data)
                     if wave_count % 1000 == 0:
-                        print(dot_count)
+                        # print(dot_count)
                         dot_count = 0
                 if len(plus_data) > 0 and len(minus_data) > 0:
                     if len(plus_data) <= 15:
@@ -175,11 +175,11 @@ def read_info_data(bits):
                 total_len += line_len + 2
 
                 line = '%d ' % line_bytes[0]
-                for byte in line_bytes[2:-1]:
+                for byte in line_bytes[2:]:
                     if 0x20 <= byte <= 0x7f:
                         line += '%c' % byte
                     else:
-                        line += '%x' % byte
+                        line += '&%x' % byte
 
                 lines.append(line)
                 if total_len + 1 >= info_block['length']:
@@ -193,7 +193,7 @@ def read_info_data(bits):
             # データブロック-？
             bits2.append(b)
             if len(bits2) == 9:
-                sum_bytes = bits_to_bytes(bits2)
+                terminate = bits_to_bytes(bits2)
                 bits2.clear()
                 area = 16
 

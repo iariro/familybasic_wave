@@ -42,15 +42,16 @@ class FBByteArray():
 
     def make_info_block(self, file_name, data_len):
         # インフォメーション
-        file_name_b = [ord(c) for c in '{:16}'.format(file_name[0:16])]
+        file_name_b = [ord(c) for c in file_name[0:15]]
+        file_name_b += [0] + [0x20] * (15 - len(file_name[0:15]))
 
         self.add_bytes([0x02]) # 2=BASIC 3=BG-GRAPHIC
         self.add_bytes(file_name_b) # file name
         self.add_bytes([0x00]) # 0
         self.add_word_little_endian(data_len) # length
         self.add_word_little_endian(0x703e) # load address
-        self.add_word_little_endian(0x2020) # execute address
-        self.add_bytes([0x00] * 104) # padding
+        self.add_bytes([0x20] * 6) # padding?
+        self.add_bytes([0x00] * 100) # padding
 
     def calc_checksum(self):
         checksum = 0
@@ -62,12 +63,37 @@ class FBByteArray():
     def make_data_block(self, lines):
         count = 0
         for line in lines:
-            line_len = len(line[1]) + 1
-            self.add_bytes([line_len + 3])
+            codes = []
+            amp = None
+            debug_line = ''
+            for c in line[1]:
+                if amp is not None:
+                    amp += c
+                    if len(amp) == 2:
+                        debug_line += '{:x}'.format(int(amp, 16))
+                        codes.append(int(amp, 16))
+                        amp = None
+                else:
+                    if c == '&':
+                        amp = ''
+                    else:
+                        debug_line += c
+                        codes.append(ord(c))
+
+            line_len = len(codes)
+            # add bytes
+            self.add_bytes([line_len + 4])
+            count += 1
             self.add_word_little_endian(line[0])
-            self.add_bytes([ord(c) for c in line[1]] + [0x00])
-            count += 3 + line_len
+            count += 2
+
+            self.add_bytes(codes)
+            count += line_len
+            # print('{} <{}>'.format(line[0], debug_line))
+            self.add_bytes([0x00])
+            count += 1
         self.add_bytes([0x00])
+        count += 1
         return count
 
 class FBBitArray():
@@ -90,9 +116,9 @@ class FBBitArray():
         self.add_bits(True, num)
         self.add_bits(False, num)
 
-    def bits_to_wave(self):
+    def bits_to_wave(self, tail):
         cycle_length = 21.683
-        volume = 1600
+        volume = 15000
 
         wave_value = []
         cycle_count_f = 0
@@ -107,6 +133,10 @@ class FBBitArray():
             for j in range(cycle_i):
                 wave_value.append(-volume if j < cycle_f / 2 else volume)
                 cycle_count_i += 1
+
+        if tail:
+            for i in range(5001):
+                wave_value.append(-volume * (5000 - i)//5000)
 
         return struct.pack("h" * len(wave_value), *wave_value)
 
@@ -142,13 +172,13 @@ def make_binwave(file_name, lines):
     info_bits.add_bit(True)
     info_bits.add_bytes_bits(info_bytes.bits)
     info_bits.add_bit(True)
-    binwave = info_bits.bits_to_wave()
+    binwave = info_bits.bits_to_wave(False)
 
     data_bits = FBBitArray()
     data_bits.make_header(20)
     data_bits.add_bit(True)
     data_bits.add_bytes_bits(data_bytes.bits)
     data_bits.add_bit(True)
-    binwave += data_bits.bits_to_wave()
+    binwave += data_bits.bits_to_wave(True)
 
     return binwave
