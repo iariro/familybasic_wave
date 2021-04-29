@@ -135,8 +135,8 @@ class FBBitArray():
                 cycle_count_i += 1
 
         if tail:
-            for i in range(5001):
-                wave_value.append(-volume * (5000 - i)//5000)
+            for i in range(10001):
+                wave_value.append(-volume * (10000 - i)//10000)
 
         return struct.pack("h" * len(wave_value), *wave_value)
 
