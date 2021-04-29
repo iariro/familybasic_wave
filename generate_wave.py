@@ -9,7 +9,7 @@
 import simpleaudio
 import familybasic_wave.generate_wave
 
-lines = [[10, "' 2021/04/27 kumagai"]]
+lines = [[10, "' 2021/04/27 test"]]
 
 binwave =  familybasic_wave.generate_wave.make_binwave('1234567890abcde', lines)
 
@@ -125,6 +125,7 @@ def save_wave(binwave, file_name):
 
 def make_binwave(file_name, lines):
 
+    # バイト列生成
     data_bytes = FBByteArray()
     data_len = data_bytes.make_data_block(lines)
     data_sum = data_bytes.calc_checksum()
@@ -135,9 +136,9 @@ def make_binwave(file_name, lines):
     info_sum = info_bytes.calc_checksum()
     info_bytes.add_word_big_endian(info_sum)
 
+    # bit列生成
     info_bits = FBBitArray()
     info_bits.make_header(40)
-
     info_bits.add_bit(True)
     info_bits.add_bytes_bits(info_bytes.bits)
     info_bits.add_bit(True)
@@ -145,7 +146,6 @@ def make_binwave(file_name, lines):
 
     data_bits = FBBitArray()
     data_bits.make_header(20)
-
     data_bits.add_bit(True)
     data_bits.add_bytes_bits(data_bytes.bits)
     data_bits.add_bit(True)
