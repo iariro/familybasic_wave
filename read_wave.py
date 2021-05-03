@@ -172,7 +172,7 @@ def read_info_data(bits):
             if len(bits2) == 9 * (line_len - 1):
 
                 line_bytes = bits_to_bytes(bits2)
-                total_len += line_len + 2
+                total_len += line_len
 
                 line = '%d ' % (line_bytes[0] + (line_bytes[1] << 8))
                 for byte in line_bytes[2:-1]:
